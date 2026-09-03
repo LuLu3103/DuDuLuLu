@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双人学习/休息转盘 · 一起努力</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #e0e0e0;
+            --accent: #e94560;
+            --gold: #f5c542;
+            --blue1: #3b82f6;
+            --blue2: #60a5fa;
+            --blue3: #2563eb;
+            --orange1: #f97316;
+            --orange2: #fb923c;
+            --orange3: #ea580c;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            --radius: 20px;
+            --me-color: #60a5fa;
+            --her-color: #f472b6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(233, 69, 96, 0.05) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 580px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .title {
+            text-align: center;
+            color: var(--text);
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-shadow: 0 0 40px rgba(245, 197, 66, 0.3);
+        }
+        .title .emoji {
+            display: inline-block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+        .title .emoji:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .title .emoji:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8888aa;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            margin-top: -12px;
+        }
+
+        .user-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .user-indicator .label {
+            color: #aaaacc;
+            font-size: 0.9rem;
+        }
+        .user-indicator .current-user {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            padding: 4px 16px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .current-user.me {
+            color: var(--me-color);
+            background: rgba(96, 165, 250, 0.15);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+        .current-user.her {
+            color: var(--her-color);
+            background: rgba(244, 114, 182, 0.15);
+            border: 1px solid rgba(244, 114, 182, 0.3);
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1/1;
+            filter: drop-shadow(var(--shadow));
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: filter 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        canvas:hover {
+            filter: brightness(1.03);
+        }
+        canvas:active {
+            filter: brightness(0.97);
+        }
+
+        .pointer-glow {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 32px;
+            background: radial-gradient(circle, rgba(245, 197, 66, 0.7) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%,
+            100% {
+                opacity: 0.5;
+                transform: translateX(-50%) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1.4);
+            }
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .btn-spin {
+            background: linear-gradient(135deg, #e94560, #c23152);
+            color: #fff;
+            border: none;
+            padding: 14px 40px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-spin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 35px rgba(233, 69, 96, 0.55);
+            background: linear-gradient(135deg, #f0506e, #d13a58);
+        }
+        .btn-spin:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.35);
+        }
+        .btn-spin:disabled {
+            background: #444;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            opacity: 0.6;
+        }
+        .btn-spin .icon {
+            display: inline-block;
+            margin-right: 8px;
+            animation: spin-icon 1.5s linear infinite;
+            font-size: 1.2rem;
+        }
+        .btn-spin:disabled .icon {
+            animation: none;
+        }
+
+        @keyframes spin-icon {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .results-container {
+            display: flex;
+            gap: 14px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .result-card {
+            flex: 1;
+            min-width: 200px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0.8;
+            transform: translateY(0);
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .result-card.active {
+            opacity: 1;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        .result-card.me-card {
+            border-color: rgba(96, 165, 250, 0.4);
+        }
+        .result-card.her-card {
+            border-color: rgba(244, 114, 182, 0.4);
+        }
+        .result-card .user-name {
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            color: #aaaacc;
+            margin-bottom: 6px;
+        }
+        .result-card .result-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .result-card.me-card .result-label {
+            color: var(--me-color);
+        }
+        .result-card.her-card .result-label {
+            color: var(--her-color);
+        }
+        .result-card .result-suggestion {
+            font-size: 0.9rem;
+            color: #ccccee;
+            letter-spacing: 0.5px;
+        }
+        .result-card .result-suggestion .highlight {
+            color: var(--gold);
+            font-weight: 600;
+        }
+        .result-card .empty-text {
+            color: #555577;
+            font-style: italic;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .user-stats {
+            flex: 1;
+            min-width: 180px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .user-stats .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #aaaacc;
+        }
+        .user-stats.me-stats .stats-header .name {
+            color: var(--me-color);
+            font-weight: 700;
+        }
+        .user-stats.her-stats .stats-header .name {
+            color: var(--her-color);
+            font-weight: 700;
+        }
+        .user-stats .stat-row {
+            display: flex;
+            justify-content: space-around;
+            gap: 8px;
+        }
+        .user-stats .stat-item {
+            text-align: center;
+        }
+        .user-stats .stat-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .user-stats .stat-label {
+            font-size: 0.7rem;
+            color: #8888aa;
+            letter-spacing: 0.5px;
+        }
+        .user-stats .stat-item.learning .stat-number {
+            color: var(--blue1);
+        }
+        .user-stats .stat-item.resting .stat-number {
+            color: var(--orange1);
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: #aaaacc;
+            letter-spacing: 1px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .legend-dot.learning {
+            background: var(--blue1);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+        }
+        .legend-dot.resting {
+            background: var(--orange1);
+            box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+        }
+
+        @media (max-width: 520px) {
+            .title {
+                font-size: 1.4rem;
+            }
+            .btn-spin {
+                padding: 12px 28px;
+                font-size: 1rem;
+            }
+            .wheel-wrapper {
+                max-width: 320px;
+            }
+            .results-container {
+                flex-direction: column;
+            }
+            .result-card {
+                min-width: 100%;
+            }
+            .stats-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <span class="emoji">💑</span>
+            双人学习·休息转盘
+            <span class="emoji">🎯</span>
+        </div>
+        <div class="subtitle">40个学习时长 · 20个休息时长 · 轮流抽取</div>
+
+        <div class="user-indicator">
+            <span class="label">当前旋转：</span>
+            <span class="current-user me" id="currentUserLabel">👤 你</span>
+        </div>
+
+        <div class="wheel-wrapper">
+            <div class="pointer-glow"></div>
+            <canvas id="wheelCanvas" width="700" height="700"></canvas>
+        </div>
+
+        <div class="controls">
+            <button class="btn-spin" id="spinBtn" aria-label="旋转转盘">
+                <span class="icon">🎡</span>
+                <span id="spinBtnText">开始旋转</span>
+            </button>
+        </div>
+
+        <div class="results-container">
+            <div class="result-card me-card" id="meResultCard">
+                <div class="user-name">👤 你的任务</div>
+                <div class="result-label" id="meResultLabel">等待中</div>
+                <div class="result-suggestion" id="meResultSuggestion"><span class="empty-text">尚未抽取</span></div>
+            </div>
+            <div class="result-card her-card" id="herResultCard">
+                <div class="user-name">👩 她的任务</div>
+                <div class="result-label" id="herResultLabel">等待中</div>
+                <div class="result-suggestion" id="herResultSuggestion"><span class="empty-text">尚未抽取</span></div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-dot learning"></span> 学习 (40格)
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot resting"></span> 休息 (20格)
+            </div>
+        </div>
+
+        <div class="stats-container">
+            <div class="user-stats me-stats">
+                <div class="stats-header">
+                    <span class="name">👤 你的统计</span>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item total">
+                        <div class="stat-number" id="meTotal">0</div>
+                        <div class="stat-label">总次数</div>
+                    </div>
+                    <div class="stat-item learning">
+                        <div class="stat-number" id="meLearning">0</div>
+                        <div class="stat-label">📖 学习</div>
+                    </div>
+                    <div class="stat-item resting">
+                        <div class="stat-number" id="meResting">0</div>
+                        <div class="stat-label">☕ 休息</div>
+                    </div>
+                </div>
+            </div>
+            <div class="user-stats her-stats">
+                <div class="stats-header">
+                    <span class="name">👩 她的统计</span>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item total">
+                        <div class="stat-number" id="herTotal">0</div>
+                        <div class="stat-label">总次数</div>
+                    </div>
+                    <div class="stat-item learning">
+                        <div class="stat-number" id="herLearning">0</div>
+                        <div class="stat-label">📖 学习</div>
+                    </div>
+                    <div class="stat-item resting">
+                        <div class="stat-number" id="herResting">0</div>
+                        <div class="stat-label">☕ 休息</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ============ 配置 ============
+            const CANVAS_SIZE = 700;
+            const CENTER = CANVAS_SIZE / 2;
+            const WHEEL_RADIUS = 310;
+            const INNER_RADIUS = 55;
+            const NUM_SLICES = 60;
+            const SLICE_ANGLE = (2 * Math.PI) / NUM_SLICES;
+
+            // 学习/休息标签（60个扇区，40学习+20休息）
+            const learningLabels = [
+                '学习15分钟', '学习20分钟', '学习25分钟', '学习30分钟',
+                '学习35分钟', '学习40分钟', '学习45分钟', '学习50分钟'
+            ];
+            const restingLabels = [
+                '休息5分钟', '休息10分钟', '休息15分钟', '喝杯水休息5分钟',
+                '起来走动5分钟'
+            ];
+
+            // 生成扇区标签数组（索引%3==2为休息）
+            const sliceLabels = [];
+            let learnIdx = 0;
+            let restIdx = 0;
+            for (let i = 0; i < NUM_SLICES; i++) {
+                if (i % 3 === 2) {
+                    sliceLabels.push(restingLabels[restIdx % restingLabels.length]);
+                    restIdx++;
+                } else {
+                    sliceLabels.push(learningLabels[learnIdx % learningLabels.length]);
+                    learnIdx++;
+                }
+            }
+
+            // 用户定义
+            const users = [
+                { id: 'me', name: '你', prefix: '👤' },
+                { id: 'her', name: '她', prefix: '👩' }
+            ];
+            let currentUserIndex = 0; // 0=你，1=她
+
+            // ============ DOM 元素 ============
+            const canvas = document.getElementById('wheelCanvas');
+            const ctx = canvas.getContext('2d');
+            const spinBtn = document.getElementById('spinBtn');
+            const spinBtnText = document.getElementById('spinBtnText');
+            const currentUserLabel = document.getElementById('currentUserLabel');
+
+            const meCard = document.getElementById('meResultCard');
+            const herCard = document.getElementById('herResultCard');
+            const meResultLabel = document.getElementById('meResultLabel');
+            const herResultLabel = document.getElementById('herResultLabel');
+            const meResultSuggestion = document.getElementById('meResultSuggestion');
+            const herResultSuggestion = document.getElementById('herResultSuggestion');
+
+            const meTotal = document.getElementById('meTotal');
+            const meLearning = document.getElementById('meLearning');
+            const meResting = document.getElementById('meResting');
+            const herTotal = document.getElementById('herTotal');
+            const herLearning = document.getElementById('herLearning');
+            const herResting = document.getElementById('herResting');
+
+            // ============ 状态 ============
+            let currentAngle = 0;
+            let isSpinning = false;
+            let animationId = null;
+
+            // 统计数据
+            const stats = {
+                me: { total: 0, learning: 0, resting: 0 },
+                her: { total: 0, learning: 0, resting: 0 }
+            };
+
+            // 存储最近一次任务（用于显示）
+            const lastTasks = {
+                me: null,
+                her: null
+            };
+
+            // ============ 扇形颜色 ============
+            function getSliceColor(index) {
+                const isRest = (index % 3 === 2);
+                if (isRest) {
+                    return (Math.floor(index / 3) % 2 === 0) ? '#f97316' : '#fb923c';
+                } else {
+                    const blueIndex = index - Math.floor(index / 3);
+                    return (blueIndex % 2 === 0) ? '#3b82f6' : '#60a5fa';
+                }
+            }
+
+            function getSliceType(index) {
+                return (index % 3 === 2) ? 'resting' : 'learning';
+            }
+
+            // ============ 绘制转盘 ============
+            function drawWheel(rotationAngle) {
+                ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+                // 外圈装饰
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(CENTER, CENTER, WHEEL_RADIUS + 18, 0, 2 * Math.PI);
+                ctx.fillStyle = '#2a2a45';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = 'rgba(245, 197, 66, 0.6)';
+                ctx.stroke();
+                for (let i = 0; i < NUM_SLICES; i++) {
+                    const angle = i * SLICE_ANGLE;
+                    const outerR = WHEEL_RADIUS + 14;
+                    const innerR = WHEEL_RADIUS + 6;
+                    ctx.beginPath();
+                    ctx.moveTo(CENTER + Math.cos(angle) * innerR, CENTER + Math.sin(angle) * innerR);
+                    ctx.lineTo(CENTER + Math.cos(angle) * outerR, CENTER + Math.sin(angle) * outerR);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                // 主转盘
+                ctx.save();
+                ctx.translate(CENTER, CENTER);
+                ctx.rotate(rotationAngle);
+
+                for (let i = 0; i < NUM_SLICES; i++) {
+                    const startAngle = i * SLICE_ANGLE;
+                    const endAngle = (i + 1) * SLICE_ANGLE;
+                    const color = getSliceColor(i);
+                    const isRest = getSliceType(i) === 'resting';
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, WHEEL_RADIUS, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = color;
+                    const midAngle = (startAngle + endAngle) / 2;
+                    const gradX = Math.cos(midAngle) * WHEEL_RADIUS * 0.7;
+                    const gradY = Math.sin(midAngle) * WHEEL_RADIUS * 0.7;
+                    const gradient = ctx.createRadialGradient(0, 0, INNER_RADIUS, gradX, gradY, WHEEL_RADIUS);
+                    if (isRest) {
+                        gradient.addColorStop(0, '#f97316');
+                        gradient.addColorStop(0.6, color);
+                        gradient.addColorStop(1, '#d4620a');
+                    } else {
+                        gradient.addColorStop(0, '#3b82f6');
+                        gradient.addColorStop(0.6, color);
+                        gradient.addColorStop(1, '#1d4ed8');
+                    }
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.lineWidth = 1.2;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.stroke();
+
+                    // 文字
+                    const label = sliceLabels[i];
+                    const textRadius = WHEEL_RADIUS * 0.62;
+                    const textX = Math.cos(midAngle) * textRadius;
+                    const textY = Math.sin(midAngle) * textRadius;
+                    ctx.save();
+                    ctx.translate(textX, textY);
+                    ctx.rotate(midAngle);
+                    let fontSize = 13;
+                    if (label.length > 6) fontSize = 11;
+                    if (label.length > 8) fontSize = 10;
+                    ctx.font = `bold ${fontSize}px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(label, 0, 0);
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+
+                // 内圈
+                ctx.beginPath();
+                ctx.arc(0, 0, INNER_RADIUS, 0, 2 * Math.PI);
+                ctx.fillStyle = '#1e1e3a';
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = 'rgba(245, 197, 66, 0.7)';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(0, 0, INNER_RADIUS * 0.72, 0, 2 * Math.PI);
+                const innerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, INNER_RADIUS * 0.72);
+                innerGrad.addColorStop(0, '#2d2d55');
+                innerGrad.addColorStop(1, '#1a1a3a');
+                ctx.fillStyle = innerGrad;
+                ctx.fill();
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.stroke();
+
+                ctx.font = 'bold 20px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#f5c542';
+                ctx.shadowColor = 'rgba(245, 197, 66, 0.5)';
+                ctx.shadowBlur = 12;
+                ctx.fillText('GO', 0, -4);
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                ctx.font = '10px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = '#aaaacc';
+                ctx.fillText('旋转', 0, 18);
+
+                ctx.restore();
+
+                drawPointer();
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(CENTER, CENTER - WHEEL_RADIUS - 8, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#f5c542';
+                ctx.fill();
+                ctx.shadowColor = 'rgba(245, 197, 66, 0.8)';
+                ctx.shadowBlur = 15;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function drawPointer() {
+                ctx.save();
+                const pointerY = CENTER - WHEEL_RADIUS - 4;
+                const pointerWidth = 20;
+                const pointerHeight = 34;
+
+                ctx.shadowColor = 'rgba(245, 197, 66, 0.6)';
+                ctx.shadowBlur = 16;
+                ctx.shadowOffsetY = 2;
+
+                ctx.beginPath();
+                ctx.moveTo(CENTER, pointerY - pointerHeight);
+                ctx.lineTo(CENTER - pointerWidth, pointerY + 5);
+                ctx.lineTo(CENTER - pointerWidth * 0.3, pointerY);
+                ctx.lineTo(CENTER + pointerWidth * 0.3, pointerY);
+                ctx.lineTo(CENTER + pointerWidth, pointerY + 5);
+                ctx.closePath();
+
+                const pointerGrad = ctx.createLinearGradient(CENTER, pointerY - pointerHeight, CENTER, pointerY + 5);
+                pointerGrad.addColorStop(0, '#ffd700');
+                pointerGrad.addColorStop(0.5, '#f5c542');
+                pointerGrad.addColorStop(1, '#e6a800');
+                ctx.fillStyle = pointerGrad;
+                ctx.fill();
+
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                ctx.lineWidth = 1.8;
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(CENTER, pointerY - pointerHeight * 0.4, 7, 0, 2 * Math.PI);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#f5c542';
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            function getPointerSlice(rotationAngle) {
+                const pointerDeg = ((270 - (rotationAngle * 180 / Math.PI)) % 360 + 360) % 360;
+                const sliceIndex = Math.floor(pointerDeg / (360 / NUM_SLICES));
+                return Math.min(sliceIndex, NUM_SLICES - 1);
+            }
+
+            // ============ 旋转动画 ============
+            function spinWheel() {
+                if (isSpinning) return;
+                isSpinning = true;
+                spinBtn.disabled = true;
+                spinBtnText.textContent = '旋转中...';
+
+                // 当前用户
+                const user = users[currentUserIndex];
+                const userId = user.id;
+                // 高亮当前用户卡片
+                document.getElementById(userId + 'ResultCard').classList.add('active');
+
+                const extraSpins = 5 + Math.random() * 4;
+                const randomOffset = Math.random() * 2 * Math.PI;
+                const targetAngle = currentAngle + extraSpins * 2 * Math.PI + randomOffset;
+                const startAngle = currentAngle;
+                const totalRotation = targetAngle - startAngle;
+                const startTime = performance.now();
+                const duration = 4500 + Math.random() * 1500;
+
+                function easeOutCubic(t) {
+                    return 1 - Math.pow(1 - t, 4);
+                }
+
+                function animateSpin(timestamp) {
+                    const elapsed = timestamp - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easedProgress = easeOutCubic(progress);
+                    currentAngle = startAngle + totalRotation * easedProgress;
+                    drawWheel(currentAngle);
+
+                    if (progress < 1) {
+                        animationId = requestAnimationFrame(animateSpin);
+                    } else {
+                        currentAngle = targetAngle;
+                        drawWheel(currentAngle);
+                        onSpinComplete(userId);
+                    }
+                }
+
+                animationId = requestAnimationFrame(animateSpin);
+            }
+
+            function onSpinComplete(userId) {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                spinBtnText.textContent = '再转一次';
+
+                const sliceIndex = getPointerSlice(currentAngle);
+                const sliceType = getSliceType(sliceIndex);
+                const sliceText = sliceLabels[sliceIndex];
+
+                // 更新统计
+                stats[userId].total++;
+                if (sliceType === 'learning') {
+                    stats[userId].learning++;
+                } else {
+                    stats[userId].resting++;
+                }
+                updateStats(userId);
+
+                // 记录任务
+                lastTasks[userId] = { type: sliceType, text: sliceText };
+                displayTask(userId);
+
+                // 高亮扇形
+                highlightSlice(sliceIndex);
+
+                // 切换到下一个用户
+                currentUserIndex = (currentUserIndex + 1) % users.length;
+                updateCurrentUserIndicator();
+            }
+
+            function highlightSlice(sliceIndex) {
+                setTimeout(() => {
+                    drawWheelWithHighlight(currentAngle, sliceIndex);
+                    setTimeout(() => {
+                        drawWheel(currentAngle);
+                    }, 1000);
+                }, 150);
+            }
+
+            function drawWheelWithHighlight(rotationAngle, highlightIndex) {
+                drawWheel(rotationAngle);
+                ctx.save();
+                const sliceCenterAngle = highlightIndex * SLICE_ANGLE + SLICE_ANGLE / 2;
+                const highlightRadius = WHEEL_RADIUS - 8;
+                const hx = CENTER + Math.cos(sliceCenterAngle - rotationAngle) * highlightRadius;
+                const hy = CENTER + Math.sin(sliceCenterAngle - rotationAngle) * highlightRadius;
+
+                ctx.beginPath();
+                ctx.arc(hx, hy, 16, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.35)';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#ffd700';
+                ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                ctx.beginPath();
+                ctx.arc(hx, hy, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // ============ 显示任务 ============
+            function displayTask(userId) {
+                const task = lastTasks[userId];
+                if (!task) return;
+                const isLearning = task.type === 'learning';
+                const labelEl = document.getElementById(userId + 'ResultLabel');
+                const suggestionEl = document.getElementById(userId + 'ResultSuggestion');
+                const cardEl = document.getElementById(userId + 'ResultCard');
+
+                labelEl.textContent = isLearning ? '📖 学习时间' : '☕ 休息一下';
+                suggestionEl.innerHTML = '任务：<span class="highlight">' + task.text + '</span>';
+                cardEl.classList.add('active');
+                // 短暂动画
+                cardEl.style.animation = 'none';
+                void cardEl.offsetWidth;
+                cardEl.style.animation = '';
+            }
+
+            function updateStats(userId) {
+                const s = stats[userId];
+                if (userId === 'me') {
+                    meTotal.textContent = s.total;
+                    meLearning.textContent = s.learning;
+                    meResting.textContent = s.resting;
+                } else {
+                    herTotal.textContent = s.total;
+                    herLearning.textContent = s.learning;
+                    herResting.textContent = s.resting;
+                }
+            }
+
+            function updateCurrentUserIndicator() {
+                const user = users[currentUserIndex];
+                const labelEl = document.getElementById('currentUserLabel');
+                labelEl.textContent = user.prefix + ' ' + user.name;
+                labelEl.className = 'current-user ' + user.id;
+            }
+
+            // ============ 初始化 ============
+            function init() {
+                drawWheel(0);
+                updateCurrentUserIndicator();
+                // 初始显示空状态
+                meResultLabel.textContent = '等待中';
+                meResultSuggestion.innerHTML = '<span class="empty-text">尚未抽取</span>';
+                herResultLabel.textContent = '等待中';
+                herResultSuggestion.innerHTML = '<span class="empty-text">尚未抽取</span>';
+                meTotal.textContent = '0';
+                meLearning.textContent = '0';
+                meResting.textContent = '0';
+                herTotal.textContent = '0';
+                herLearning.textContent = '0';
+                herResting.textContent = '0';
+            }
+
+            // 事件绑定
+            spinBtn.addEventListener('click', spinWheel);
+            canvas.addEventListener('click', spinWheel);
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    spinWheel();
+                }
+            });
+
+            init();
+            console.log('💑 双人学习/休息转盘已启动！');
+            console.log('👤 当前用户：' + users[currentUserIndex].name);
+            console.log('🔄 每次旋转后自动切换用户');
+        })();
+    </script>
+</body>
+</html>
