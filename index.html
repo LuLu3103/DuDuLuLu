@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>嘟嘟噜噜Lucky转盘 · 云端同步</title>
+    <title>嘟嘟噜噜Lucky转盘 · 自由选择</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
     </script>
     <style>
-        /* ========== 全局重置 & 颜色 ========== */
+        /* ========== 样式（沿用之前，增加选择器样式） ========== */
         :root {
             --bg: #1a1a2e;
             --card-bg: #16213e;
@@ -46,8 +46,6 @@
             align-items: center;
             gap: 18px;
         }
-
-        /* ========== 头部 & 日期选择 ========== */
         .header {
             width: 100%;
             text-align: center;
@@ -153,41 +151,46 @@
             border: 1px solid rgba(111, 207, 151, 0.12);
         }
 
-        /* ========== 用户指示器 ========== */
-        .user-indicator {
+        /* ===== 玩家选择器（新增） ===== */
+        .player-selector {
             display: flex;
-            align-items: center;
             gap: 12px;
             background: var(--card-bg);
-            padding: 8px 20px;
+            padding: 8px 16px;
             border-radius: 40px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-        .user-indicator .label {
+        .player-selector .player-btn {
+            padding: 6px 20px;
+            border-radius: 30px;
+            border: 2px solid transparent;
+            font-weight: 600;
+            font-size: 1rem;
+            background: transparent;
             color: #aaaacc;
-            font-size: 0.9rem;
-        }
-        .user-indicator .current-user {
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            padding: 4px 16px;
-            border-radius: 20px;
+            cursor: pointer;
             transition: all 0.3s;
+            font-family: inherit;
+            letter-spacing: 0.5px;
         }
-        .current-user.me {
-            color: var(--me-color);
+        .player-selector .player-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .player-selector .player-btn.active-me {
+            border-color: var(--me-color);
             background: rgba(96, 165, 250, 0.15);
-            border: 1px solid rgba(96, 165, 250, 0.3);
+            color: var(--me-color);
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
         }
-        .current-user.her {
-            color: var(--her-color);
+        .player-selector .player-btn.active-her {
+            border-color: var(--her-color);
             background: rgba(244, 114, 182, 0.15);
-            border: 1px solid rgba(244, 114, 182, 0.3);
+            color: var(--her-color);
+            box-shadow: 0 0 20px rgba(244, 114, 182, 0.2);
         }
 
-        /* ========== 转盘容器 ========== */
+        /* ===== 转盘等（与之前相同） ===== */
         .wheel-wrapper {
             position: relative;
             width: 100%;
@@ -234,8 +237,6 @@
                 transform: translateX(-50%) scale(1.4);
             }
         }
-
-        /* ========== 按钮 & 提示 ========== */
         .controls {
             display: flex;
             flex-direction: column;
@@ -302,7 +303,6 @@
             color: #f5c542;
         }
 
-        /* ========== 任务卡片 ========== */
         .results-container {
             display: flex;
             gap: 14px;
@@ -369,7 +369,6 @@
             font-style: italic;
         }
 
-        /* ========== 图例 ========== */
         .legend {
             display: flex;
             gap: 16px;
@@ -399,7 +398,6 @@
             box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
         }
 
-        /* ========== 统计面板 ========== */
         .stats-container {
             display: flex;
             gap: 12px;
@@ -492,7 +490,6 @@
             font-size: 1.1rem;
         }
 
-        /* ========== 响应式 ========== */
         @media (max-width: 520px) {
             .title {
                 font-size: 1.4rem;
@@ -513,6 +510,14 @@
             .date-selector .status-tip {
                 font-size: 0.65rem;
                 padding: 1px 10px;
+            }
+            .player-selector {
+                padding: 6px 12px;
+                gap: 8px;
+            }
+            .player-selector .player-btn {
+                font-size: 0.9rem;
+                padding: 4px 14px;
             }
             .btn-spin {
                 padding: 12px 28px;
@@ -566,10 +571,10 @@
             </div>
         </div>
 
-        <!-- 当前玩家 -->
-        <div class="user-indicator">
-            <span class="label">当前旋转：</span>
-            <span class="current-user me" id="currentUserLabel">👤 噜噜</span>
+        <!-- 玩家选择器（新增） -->
+        <div class="player-selector" id="playerSelector">
+            <button class="player-btn active-me" data-player="me" id="selectMe">👤 噜噜抽</button>
+            <button class="player-btn" data-player="her" id="selectHer">👩 嘟嘟抽</button>
         </div>
 
         <!-- 转盘 -->
@@ -629,17 +634,16 @@
 
     <script>
         // ============================================================
-        // 1. 配置（使用您提供的 Supabase 信息）
+        // 配置 Supabase
         // ============================================================
         const SUPABASE_URL = 'https://xfmaxhwwcdtvrspwfuvq.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_R0ML55vkEO5yj_g-pzkcLQ_hij3Sdwg';
         const SHARED_USER_ID = 'lulu_dudu';
 
-        // 使用独立变量名避免与全局 supabase 冲突
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ============================================================
-        // 2. 转盘常量
+        // 转盘常量
         // ============================================================
         const CANVAS_SIZE = 700;
         const CENTER = CANVAS_SIZE / 2;
@@ -657,7 +661,6 @@
             '起来走动5分钟'
         ];
 
-        // 生成扇区标签
         const sliceLabels = [];
         let learnIdx = 0,
             restIdx = 0;
@@ -677,17 +680,18 @@
         ];
 
         // ============================================================
-        // 3. DOM 引用
+        // DOM 元素
         // ============================================================
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const spinBtn = document.getElementById('spinBtn');
         const spinBtnText = document.getElementById('spinBtnText');
         const spinHint = document.getElementById('spinHint');
-        const currentUserLabel = document.getElementById('currentUserLabel');
         const datePicker = document.getElementById('datePicker');
         const goTodayBtn = document.getElementById('goTodayBtn');
         const dateStatusTip = document.getElementById('dateStatusTip');
+        const selectMe = document.getElementById('selectMe');
+        const selectHer = document.getElementById('selectHer');
 
         const meResultLabel = document.getElementById('meResultLabel');
         const herResultLabel = document.getElementById('herResultLabel');
@@ -708,13 +712,15 @@
         const herRestingTime = document.getElementById('herRestingTime');
 
         // ============================================================
-        // 4. 状态
+        // 状态
         // ============================================================
         let currentAngle = 0;
         let isSpinning = false;
         let animationId = null;
-        let currentUserIndex = 0;
         let currentDate = '';
+        // 新增：当前选中的玩家ID（默认 'me'）
+        let selectedPlayerId = 'me';
+
         let stats = {
             me: { total: 0, learning: 0, resting: 0, learningTime: 0, restingTime: 0 },
             her: { total: 0, learning: 0, resting: 0, learningTime: 0, restingTime: 0 }
@@ -722,7 +728,7 @@
         let lastTasks = { me: null, her: null };
 
         // ============================================================
-        // 5. 辅助函数
+        // 辅助函数
         // ============================================================
         function getToday() {
             const d = new Date();
@@ -762,12 +768,10 @@
         }
 
         // ============================================================
-        // 6. 绘制转盘
+        // 绘制转盘（与之前一致）
         // ============================================================
         function drawWheel(rotationAngle) {
             ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-            // 外圈装饰
             ctx.save();
             ctx.beginPath();
             ctx.arc(CENTER, CENTER, WHEEL_RADIUS + 18, 0, 2 * Math.PI);
@@ -787,17 +791,14 @@
             }
             ctx.restore();
 
-            // 主转盘
             ctx.save();
             ctx.translate(CENTER, CENTER);
             ctx.rotate(rotationAngle);
-
             for (let i = 0; i < NUM_SLICES; i++) {
                 const start = i * SLICE_ANGLE;
                 const end = (i + 1) * SLICE_ANGLE;
                 const color = getSliceColor(i);
                 const isRest = getSliceType(i) === 'resting';
-
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.arc(0, 0, WHEEL_RADIUS, start, end);
@@ -843,7 +844,6 @@
                 ctx.restore();
             }
 
-            // 内圈
             ctx.beginPath();
             ctx.arc(0, 0, INNER_RADIUS, 0, 2 * Math.PI);
             ctx.fillStyle = '#1e1e3a';
@@ -875,7 +875,6 @@
             ctx.fillText('旋转', 0, 18);
             ctx.restore();
 
-            // 指针（顶部三角形）
             ctx.save();
             const py = CENTER - WHEEL_RADIUS - 4;
             const pw = 20,
@@ -910,7 +909,6 @@
             ctx.stroke();
             ctx.restore();
 
-            // 指针底部光晕
             ctx.save();
             ctx.beginPath();
             ctx.arc(CENTER, CENTER - WHEEL_RADIUS - 8, 5, 0, 2 * Math.PI);
@@ -952,7 +950,7 @@
         }
 
         // ============================================================
-        // 7. 数据库操作（Supabase）
+        // 数据库操作
         // ============================================================
         async function saveDayData(date) {
             const payload = {
@@ -960,7 +958,7 @@
                 date: date,
                 stats: stats,
                 last_tasks: lastTasks,
-                current_user_index: currentUserIndex,
+                // 不再保存 current_user_index，因为现在手动选择
                 updated_at: new Date().toISOString()
             };
             const { error } = await supabaseClient
@@ -981,7 +979,7 @@
         }
 
         // ============================================================
-        // 8. 旋转逻辑
+        // 旋转逻辑（使用选中的玩家）
         // ============================================================
         function spinWheel() {
             if (isSpinning) return;
@@ -989,13 +987,16 @@
             const today = getToday();
             if (currentDate !== today) return;
 
+            // 使用当前选中的玩家
+            const userId = selectedPlayerId;
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+
             isSpinning = true;
             spinBtn.disabled = true;
             spinBtnText.textContent = '旋转中...';
             spinHint.textContent = '';
 
-            const user = users[currentUserIndex];
-            const userId = user.id;
             document.getElementById(userId + 'ResultCard').classList.add('active');
 
             const extra = 5 + Math.random() * 4;
@@ -1050,8 +1051,7 @@
 
             highlightSlice(idx);
 
-            currentUserIndex = (currentUserIndex + 1) % users.length;
-            updateCurrentUserIndicator();
+            // 不再切换玩家，保持当前选中不变
 
             await saveDayData(currentDate);
             updateDateStatusTip();
@@ -1065,7 +1065,7 @@
         }
 
         // ============================================================
-        // 9. UI 更新
+        // UI 更新
         // ============================================================
         function displayTask(userId) {
             const task = lastTasks[userId];
@@ -1099,10 +1099,15 @@
             herRestingTime.textContent = '累计' + sh.restingTime + '分钟';
         }
 
-        function updateCurrentUserIndicator() {
-            const user = users[currentUserIndex];
-            currentUserLabel.textContent = user.prefix + ' ' + user.name;
-            currentUserLabel.className = 'current-user ' + user.id;
+        // 更新玩家选择按钮高亮
+        function updatePlayerSelectorUI() {
+            if (selectedPlayerId === 'me') {
+                selectMe.className = 'player-btn active-me';
+                selectHer.className = 'player-btn';
+            } else {
+                selectMe.className = 'player-btn';
+                selectHer.className = 'player-btn active-her';
+            }
         }
 
         function updateDateStatusTip() {
@@ -1136,14 +1141,14 @@
             updateStatsUI();
             displayTask('me');
             displayTask('her');
-            updateCurrentUserIndicator();
+            updatePlayerSelectorUI();
             updateDateStatusTip();
             updateSpinButtonState();
             drawWheel(currentAngle);
         }
 
         // ============================================================
-        // 10. 日期切换
+        // 日期切换
         // ============================================================
         async function switchToDate(date) {
             if (!date) return;
@@ -1151,12 +1156,11 @@
             if (data) {
                 stats = data.stats;
                 lastTasks = data.last_tasks || { me: null, her: null };
-                currentUserIndex = data.current_user_index || 0;
                 currentDate = date;
+                // 注意：不再恢复 currentUserIndex，因为现在是手动选择
             } else {
                 stats = getDefaultStats();
                 lastTasks = getDefaultLastTasks();
-                currentUserIndex = 0;
                 currentDate = date;
                 if (date === getToday()) {
                     await saveDayData(date);
@@ -1172,7 +1176,16 @@
         }
 
         // ============================================================
-        // 11. 初始化
+        // 玩家选择事件
+        // ============================================================
+        function selectPlayer(playerId) {
+            if (isSpinning) return; // 旋转中禁止切换
+            selectedPlayerId = playerId;
+            updatePlayerSelectorUI();
+        }
+
+        // ============================================================
+        // 初始化
         // ============================================================
         async function init() {
             const today = getToday();
@@ -1183,24 +1196,22 @@
                 if (data) {
                     stats = data.stats;
                     lastTasks = data.last_tasks || { me: null, her: null };
-                    currentUserIndex = data.current_user_index || 0;
                     currentDate = today;
                 } else {
                     stats = getDefaultStats();
                     lastTasks = getDefaultLastTasks();
-                    currentUserIndex = 0;
                     currentDate = today;
                     await saveDayData(today);
                 }
             } catch (e) {
-                console.warn('Supabase 连接失败，使用本地默认数据', e);
-                // 如果连不上，使用空数据
+                console.warn('Supabase 连接失败，使用默认数据', e);
                 stats = getDefaultStats();
                 lastTasks = getDefaultLastTasks();
-                currentUserIndex = 0;
                 currentDate = today;
             }
 
+            // 默认选中 'me'
+            selectedPlayerId = 'me';
             refreshAllUI();
 
             // 事件绑定
@@ -1220,15 +1231,19 @@
 
             goTodayBtn.addEventListener('click', goToday);
 
+            // 玩家选择
+            selectMe.addEventListener('click', () => selectPlayer('me'));
+            selectHer.addEventListener('click', () => selectPlayer('her'));
+
             window.addEventListener('beforeunload', () => {
                 if (currentDate === getToday()) {
                     saveDayData(currentDate);
                 }
             });
 
-            console.log('💑 嘟嘟噜噜Lucky转盘（云端版）已启动！');
+            console.log('💑 嘟嘟噜噜Lucky转盘（自由选择版）已启动！');
             console.log('📅 当前日期：' + currentDate);
-            console.log('👤 当前玩家：' + users[currentUserIndex].name);
+            console.log('👤 当前选中玩家：' + selectedPlayerId);
             console.log('🔑 共享ID：' + SHARED_USER_ID);
         }
 
