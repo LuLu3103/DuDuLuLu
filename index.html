@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>双人学习/休息转盘 · 一起努力</title>
+    <title>嘟嘟噜噜Lucky转盘 · 一起努力</title>
     <style>
         :root {
             --bg: #1a1a2e;
@@ -80,14 +80,6 @@
             50% {
                 transform: translateY(-6px);
             }
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #8888aa;
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            margin-top: -12px;
         }
 
         .user-indicator {
@@ -315,7 +307,7 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .user-stats .stats-header {
             display: flex;
@@ -323,6 +315,8 @@
             align-items: center;
             font-size: 0.85rem;
             color: #aaaacc;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .user-stats.me-stats .stats-header .name {
             color: var(--me-color);
@@ -332,29 +326,65 @@
             color: var(--her-color);
             font-weight: 700;
         }
-        .user-stats .stat-row {
+
+        /* 统计列表样式（新） */
+        .stat-list {
             display: flex;
-            justify-content: space-around;
-            gap: 8px;
+            flex-direction: column;
+            gap: 4px;
+            padding-top: 2px;
         }
-        .user-stats .stat-item {
+        .stat-row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3px 4px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #ccccee;
+            transition: background 0.2s;
+        }
+        .stat-row-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .stat-row-item .stat-icon {
+            font-size: 0.95rem;
+            margin-right: 6px;
+            width: 22px;
             text-align: center;
+            flex-shrink: 0;
         }
-        .user-stats .stat-number {
-            font-size: 1.4rem;
+        .stat-row-item .stat-label {
+            flex: 1;
+            color: #9999bb;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+        .stat-row-item .stat-value {
             font-weight: 700;
             color: #fff;
+            font-size: 1rem;
+            margin-right: 6px;
         }
-        .user-stats .stat-label {
-            font-size: 0.7rem;
-            color: #8888aa;
-            letter-spacing: 0.5px;
+        .stat-row-item .stat-time {
+            font-size: 0.8rem;
+            color: #8888bb;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+            font-weight: 500;
         }
-        .user-stats .stat-item.learning .stat-number {
+        .stat-row-item .stat-time.learning-time {
             color: var(--blue1);
         }
-        .user-stats .stat-item.resting .stat-number {
+        .stat-row-item .stat-time.resting-time {
             color: var(--orange1);
+        }
+
+        .stat-row-item.total-row .stat-value {
+            color: var(--gold);
+            font-size: 1.1rem;
         }
 
         .legend {
@@ -406,6 +436,18 @@
             .stats-container {
                 flex-direction: column;
             }
+            .stat-row-item {
+                font-size: 0.82rem;
+                flex-wrap: wrap;
+                gap: 2px;
+            }
+            .stat-row-item .stat-time {
+                font-size: 0.7rem;
+                padding: 1px 8px;
+            }
+            .stat-row-item .stat-value {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -413,14 +455,13 @@
     <div class="container">
         <div class="title">
             <span class="emoji">💑</span>
-            双人学习·休息转盘
+            嘟嘟噜噜Lucky转盘
             <span class="emoji">🎯</span>
         </div>
-        <div class="subtitle">40个学习时长 · 20个休息时长 · 轮流抽取</div>
 
         <div class="user-indicator">
             <span class="label">当前旋转：</span>
-            <span class="current-user me" id="currentUserLabel">👤 你</span>
+            <span class="current-user me" id="currentUserLabel">👤 噜噜</span>
         </div>
 
         <div class="wheel-wrapper">
@@ -437,12 +478,12 @@
 
         <div class="results-container">
             <div class="result-card me-card" id="meResultCard">
-                <div class="user-name">👤 你的任务</div>
+                <div class="user-name">👤 噜噜的任务</div>
                 <div class="result-label" id="meResultLabel">等待中</div>
                 <div class="result-suggestion" id="meResultSuggestion"><span class="empty-text">尚未抽取</span></div>
             </div>
             <div class="result-card her-card" id="herResultCard">
-                <div class="user-name">👩 她的任务</div>
+                <div class="user-name">👩 嘟嘟的任务</div>
                 <div class="result-label" id="herResultLabel">等待中</div>
                 <div class="result-suggestion" id="herResultSuggestion"><span class="empty-text">尚未抽取</span></div>
             </div>
@@ -460,39 +501,49 @@
         <div class="stats-container">
             <div class="user-stats me-stats">
                 <div class="stats-header">
-                    <span class="name">👤 你的统计</span>
+                    <span class="name">👤 噜噜的统计</span>
                 </div>
-                <div class="stat-row">
-                    <div class="stat-item total">
-                        <div class="stat-number" id="meTotal">0</div>
-                        <div class="stat-label">总次数</div>
+                <div class="stat-list">
+                    <div class="stat-row-item total-row">
+                        <span class="stat-icon">📊</span>
+                        <span class="stat-label">总次数</span>
+                        <span class="stat-value" id="meTotal">0</span>
                     </div>
-                    <div class="stat-item learning">
-                        <div class="stat-number" id="meLearning">0</div>
-                        <div class="stat-label">📖 学习</div>
+                    <div class="stat-row-item">
+                        <span class="stat-icon">📖</span>
+                        <span class="stat-label">学习</span>
+                        <span class="stat-value" id="meLearning">0次</span>
+                        <span class="stat-time learning-time" id="meLearningTime">累计0分钟</span>
                     </div>
-                    <div class="stat-item resting">
-                        <div class="stat-number" id="meResting">0</div>
-                        <div class="stat-label">☕ 休息</div>
+                    <div class="stat-row-item">
+                        <span class="stat-icon">☕</span>
+                        <span class="stat-label">休息</span>
+                        <span class="stat-value" id="meResting">0次</span>
+                        <span class="stat-time resting-time" id="meRestingTime">累计0分钟</span>
                     </div>
                 </div>
             </div>
             <div class="user-stats her-stats">
                 <div class="stats-header">
-                    <span class="name">👩 她的统计</span>
+                    <span class="name">👩 嘟嘟的统计</span>
                 </div>
-                <div class="stat-row">
-                    <div class="stat-item total">
-                        <div class="stat-number" id="herTotal">0</div>
-                        <div class="stat-label">总次数</div>
+                <div class="stat-list">
+                    <div class="stat-row-item total-row">
+                        <span class="stat-icon">📊</span>
+                        <span class="stat-label">总次数</span>
+                        <span class="stat-value" id="herTotal">0</span>
                     </div>
-                    <div class="stat-item learning">
-                        <div class="stat-number" id="herLearning">0</div>
-                        <div class="stat-label">📖 学习</div>
+                    <div class="stat-row-item">
+                        <span class="stat-icon">📖</span>
+                        <span class="stat-label">学习</span>
+                        <span class="stat-value" id="herLearning">0次</span>
+                        <span class="stat-time learning-time" id="herLearningTime">累计0分钟</span>
                     </div>
-                    <div class="stat-item resting">
-                        <div class="stat-number" id="herResting">0</div>
-                        <div class="stat-label">☕ 休息</div>
+                    <div class="stat-row-item">
+                        <span class="stat-icon">☕</span>
+                        <span class="stat-label">休息</span>
+                        <span class="stat-value" id="herResting">0次</span>
+                        <span class="stat-time resting-time" id="herRestingTime">累计0分钟</span>
                     </div>
                 </div>
             </div>
@@ -533,12 +584,12 @@
                 }
             }
 
-            // 用户定义
+            // 用户定义 —— 噜噜 & 嘟嘟
             const users = [
-                { id: 'me', name: '你', prefix: '👤' },
-                { id: 'her', name: '她', prefix: '👩' }
+                { id: 'me', name: '噜噜', prefix: '👤' },
+                { id: 'her', name: '嘟嘟', prefix: '👩' }
             ];
-            let currentUserIndex = 0; // 0=你，1=她
+            let currentUserIndex = 0; // 0=噜噜，1=嘟嘟
 
             // ============ DOM 元素 ============
             const canvas = document.getElementById('wheelCanvas');
@@ -557,19 +608,23 @@
             const meTotal = document.getElementById('meTotal');
             const meLearning = document.getElementById('meLearning');
             const meResting = document.getElementById('meResting');
+            const meLearningTime = document.getElementById('meLearningTime');
+            const meRestingTime = document.getElementById('meRestingTime');
             const herTotal = document.getElementById('herTotal');
             const herLearning = document.getElementById('herLearning');
             const herResting = document.getElementById('herResting');
+            const herLearningTime = document.getElementById('herLearningTime');
+            const herRestingTime = document.getElementById('herRestingTime');
 
             // ============ 状态 ============
             let currentAngle = 0;
             let isSpinning = false;
             let animationId = null;
 
-            // 统计数据
+            // 统计数据 —— 增加累计时间
             const stats = {
-                me: { total: 0, learning: 0, resting: 0 },
-                her: { total: 0, learning: 0, resting: 0 }
+                me: { total: 0, learning: 0, resting: 0, learningTime: 0, restingTime: 0 },
+                her: { total: 0, learning: 0, resting: 0, learningTime: 0, restingTime: 0 }
             };
 
             // 存储最近一次任务（用于显示）
@@ -577,6 +632,12 @@
                 me: null,
                 her: null
             };
+
+            // ============ 辅助：从标签中提取分钟数 ============
+            function extractMinutes(text) {
+                const match = text.match(/(\d+)\s*分钟/);
+                return match ? parseInt(match[1], 10) : 0;
+            }
 
             // ============ 扇形颜色 ============
             function getSliceColor(index) {
@@ -782,10 +843,8 @@
                 spinBtn.disabled = true;
                 spinBtnText.textContent = '旋转中...';
 
-                // 当前用户
                 const user = users[currentUserIndex];
                 const userId = user.id;
-                // 高亮当前用户卡片
                 document.getElementById(userId + 'ResultCard').classList.add('active');
 
                 const extraSpins = 5 + Math.random() * 4;
@@ -827,18 +886,21 @@
                 const sliceIndex = getPointerSlice(currentAngle);
                 const sliceType = getSliceType(sliceIndex);
                 const sliceText = sliceLabels[sliceIndex];
+                const minutes = extractMinutes(sliceText);
 
                 // 更新统计
                 stats[userId].total++;
                 if (sliceType === 'learning') {
                     stats[userId].learning++;
+                    stats[userId].learningTime += minutes;
                 } else {
                     stats[userId].resting++;
+                    stats[userId].restingTime += minutes;
                 }
                 updateStats(userId);
 
                 // 记录任务
-                lastTasks[userId] = { type: sliceType, text: sliceText };
+                lastTasks[userId] = { type: sliceType, text: sliceText, minutes: minutes };
                 displayTask(userId);
 
                 // 高亮扇形
@@ -897,22 +959,26 @@
                 labelEl.textContent = isLearning ? '📖 学习时间' : '☕ 休息一下';
                 suggestionEl.innerHTML = '任务：<span class="highlight">' + task.text + '</span>';
                 cardEl.classList.add('active');
-                // 短暂动画
                 cardEl.style.animation = 'none';
                 void cardEl.offsetWidth;
                 cardEl.style.animation = '';
             }
 
+            // ============ 更新统计（含累计时间） ============
             function updateStats(userId) {
                 const s = stats[userId];
                 if (userId === 'me') {
                     meTotal.textContent = s.total;
-                    meLearning.textContent = s.learning;
-                    meResting.textContent = s.resting;
+                    meLearning.textContent = s.learning + '次';
+                    meResting.textContent = s.resting + '次';
+                    meLearningTime.textContent = '累计' + s.learningTime + '分钟';
+                    meRestingTime.textContent = '累计' + s.restingTime + '分钟';
                 } else {
                     herTotal.textContent = s.total;
-                    herLearning.textContent = s.learning;
-                    herResting.textContent = s.resting;
+                    herLearning.textContent = s.learning + '次';
+                    herResting.textContent = s.resting + '次';
+                    herLearningTime.textContent = '累计' + s.learningTime + '分钟';
+                    herRestingTime.textContent = '累计' + s.restingTime + '分钟';
                 }
             }
 
@@ -927,17 +993,20 @@
             function init() {
                 drawWheel(0);
                 updateCurrentUserIndicator();
-                // 初始显示空状态
                 meResultLabel.textContent = '等待中';
                 meResultSuggestion.innerHTML = '<span class="empty-text">尚未抽取</span>';
                 herResultLabel.textContent = '等待中';
                 herResultSuggestion.innerHTML = '<span class="empty-text">尚未抽取</span>';
-                meTotal.textContent = '0';
-                meLearning.textContent = '0';
-                meResting.textContent = '0';
-                herTotal.textContent = '0';
-                herLearning.textContent = '0';
-                herResting.textContent = '0';
+                // 重置所有统计显示
+                ['me', 'her'].forEach(id => {
+                    const s = stats[id];
+                    s.total = 0;
+                    s.learning = 0;
+                    s.resting = 0;
+                    s.learningTime = 0;
+                    s.restingTime = 0;
+                    updateStats(id);
+                });
             }
 
             // 事件绑定
@@ -951,9 +1020,9 @@
             });
 
             init();
-            console.log('💑 双人学习/休息转盘已启动！');
-            console.log('👤 当前用户：' + users[currentUserIndex].name);
-            console.log('🔄 每次旋转后自动切换用户');
+            console.log('💑 嘟嘟噜噜Lucky转盘已启动！');
+            console.log('👤 当前玩家：' + users[currentUserIndex].name);
+            console.log('🔄 每次旋转后自动切换玩家');
         })();
     </script>
 </body>
